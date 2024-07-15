@@ -36,7 +36,8 @@ setup(
     packages=[package for package in find_packages() if package.startswith("neurogym")],
     install_requires=[
         "numpy",
-        "gymnasium>=0.29.1" "matplotlib",
+        "gymnasium>=0.29.1",
+        "matplotlib",
     ],
     extras_require=extras,
     description="NeuroGym: Gymnasium-style cognitive neuroscience tasks",
