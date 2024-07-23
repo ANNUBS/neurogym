@@ -16,6 +16,8 @@ from neurogym.wrappers import (
     SideBias,
 )
 
+# ruff: noqa: N803, F821
+
 
 @pytest.mark.skip(reason="This test is failing, needs more investigation")
 def test_sidebias(
