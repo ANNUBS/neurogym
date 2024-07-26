@@ -466,8 +466,8 @@ class TrialWrapper(gym.Wrapper):
         super().__init__(env)
         self.env = env
         if not isinstance(self.unwrapped, TrialEnv):
-            msg = "Trial wrapper must be used on TrialEnvGot instead."
-            raise TypeError(msg, self.unwrapped)
+            msg = f"Trial wrapper must be used on TrialEnv, not {self.unwrapped}."
+            raise TypeError(msg)
         self.unwrapped.set_top(self)
 
     @property
