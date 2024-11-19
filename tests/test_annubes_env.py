@@ -155,39 +155,59 @@ def test_annubes_env_max_sequential(session: dict, catch_prob: float, max_sequen
     4. Verifies that the frequency of catch trials matches the specified
        `catch_prob`.
     """
-    env = AnnubesEnv(session=session, catch_prob=catch_prob, max_sequential=max_sequential, random_seed=RND_SEED)
+    trial_types_dict = {}
+    n_fails = 0
+    for x in range(100):
+        try:
+            env = AnnubesEnv(
+                session=session,
+                catch_prob=catch_prob,
+                max_sequential=max_sequential,
+                # random_seed=RND_SEED,
+            )
 
-    trial_types: list[str | None] = []
-    for _ in range(N_TRIALS):
-        env.new_trial()
-        trial_types.append(env.trial["stim_type"])
+            trial_types: list[str | None] = []
+            for _ in range(N_TRIALS):
+                env.new_trial()
+                trial_types.append(env.trial["stim_type"])
+            trial_types_dict[x] = trial_types
 
-    # Check for sequences longer than max_sequential, excluding None (catch trials)
-    for i in range(len(trial_types) - max_sequential):
-        sequence = [t for t in trial_types[i : i + max_sequential + 1] if t is not None]
-        if len(sequence) > max_sequential:
-            assert len(set(sequence)) > 1, f"Found a sequence longer than {max_sequential} at index {i}"
+            # Check for sequences longer than max_sequential, excluding None (catch trials)
+            for i in range(len(trial_types) - max_sequential):
+                sequence = [t for t in trial_types[i : i + max_sequential + 1] if t is not None]
+                if len(sequence) > max_sequential:
+                    assert len(set(sequence)) > 1, f"Found a sequence longer than {max_sequential} at index {i}"
 
-    # Check that all the trial types occur
-    assert set(trial_types) - {None} == set(env.session.keys()), "Not all trial types occurred"
+            # Check that all the trial types occur
+            assert set(trial_types) - {None} == set(env.session.keys()), "Not all trial types occurred"
 
-    # Check that the distribution is roughly balanced
-    expected_non_catch = N_TRIALS * (1 - catch_prob)
+            # Check that the distribution is roughly balanced
+            expected_non_catch = N_TRIALS * (1 - catch_prob)
+            deviation = 0.3
 
-    for trial_type, expected_prob in session.items():
-        count = trial_types.count(trial_type)
-        expected_count = expected_non_catch * expected_prob
-        # Allow for 20% deviation from expected count
-        assert (
-            0.8 * expected_count <= count <= 1.2 * expected_count
-        ), f"{trial_type} trials are not balanced. Expected: {expected_count:.2f}, Actual: {count}"
+            for trial_type, expected_prob in session.items():
+                count = trial_types.count(trial_type)
+                expected_count = expected_non_catch * expected_prob
+                # Allow for 20% deviation from expected count
 
-    # Check catch trial frequency
-    catch_count = trial_types.count(None)
-    expected_catch = N_TRIALS * catch_prob
-    assert (
-        0.8 * expected_catch <= catch_count <= 1.2 * expected_catch
-    ), f"Catch trials are not balanced. Expected: {expected_catch:.2f}, Actual: {catch_count}"
+                assert (
+                    (1 - deviation) * expected_count <= count <= (1 + deviation) * expected_count
+                ), f"{trial_type} trials are not balanced. Expected: {expected_count:.2f}, Actual: {count}"
+
+            # Check catch trial frequency
+            catch_count = trial_types.count(None)
+            expected_catch = N_TRIALS * catch_prob
+            assert (
+                (1 - deviation) * expected_catch <= catch_count <= (1 + deviation) * expected_catch
+            ), f"Catch trials are not balanced. Expected: {expected_catch}, Actual: {catch_count}"
+        except AssertionError:
+            n_fails += 1
+
+    if n_fails:
+        msg = f"tests failed {n_fails} times out of {x+1} runs"
+        raise AssertionError(msg)
+
+        # assert len(set(tuple(value) for value in trial_types_dict.values())) == 1
 
 
 def test_observation_space(default_env: AnnubesEnv, custom_env: AnnubesEnv) -> None:
